@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Prueba Report</title>
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.6/css/bootstrap.css">
+    <style>
+        table {
+            table-layout: fixed;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="row">
+        <h3><img src="logo-webmd-site.png" width="250" height="60">&nbsp;Test Name: <label id="title"
+                                                                                           class="text-danger"></label>
+        </h3>
+        <h4><label id="total" class="text-info"></label>
+            <label id="success" class="text-success"></label>
+            <label id="failure" class="text-warning"></label>
+        </h4>
+    </div>
+    <div class="row clearfix">
+        <div class="col-md-12 column table-responsive">
+            <table class="table table-bordered table-hover">
+                <thead>
+                <tr>
+                    <th style="width: 2%;">#</th>
+                    <th style="width: 10%;">Action Name</th>
+                    <th style="width: 20%;">Parameters</th>
+                    <th>Steps</th>
+                    <th style="width: 10%;">Result</th>
+                </tr>
+                </thead>
+                <tbody class="tbody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <footer>
+        <p>&copy; William Jiang json-sample 2016</p>
+    </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.6/js/bootstrap.min.js"></script>
+<script>
+
+    var total_tests = 0, success_tests = 0, failure_tests = 0;
+
+    function loopChildren(children_ary) {
+        var cc = _.map(children_ary, function (c) {
+            var cary = [c.name, c.result];
+            var params = loopParameters(c.parameters);
+            cary.push(params);
+            return cary;
+        });
+        return cc;
+    }
+
+
+    function loopParameters(parameter_ary) {
+
+        if (parameter_ary.length > 0) {
+            var params = [];
+            for (var i = 0; i < parameter_ary.length; i++) {
+                var param = {};
+                param[parameter_ary[i]['paramname']] = parameter_ary[i]['paramvalue'];
+                params.push(param);
+            }
+            return params;
+        }
+    }
+
+    function loopParameters1(parameter_ary) {
+        var params = _.map(parameter_ary, function (pa) {
+            var param = {};
+            param[pa['paramname']] = pa['paramvalue'];
+            return param;
+        });
+        return params;
+    }
+
+
+    function renderParams(pms) {
+        var phtml = [];
+        _.each(pms, function (pm) {
+            for (var k in pm) {
+                phtml.push(k + ': ' + pm[k].replace(/</g, '&lt;'));
+            }
+        });
+        return phtml.join('\n');
+    }
+
+    function renderSteps(steps) {
+        var shtml = [];
+
+        shtml = [
+            '<table class="table table-striped table-condensed" width="100%">',
+            '<thead>',
+            '  <tr>',
+            '    <th>Step Name</th>',
+            '    <th>Parameters</th>',
+            '    <th>Result</th>',
+            '  </tr>',
+            '</thead>'
+        ];
+
+        _.each(steps, function (step) {
+            shtml.push('<tr>');
+            shtml.push('  <td>' + step[0] + '</td>');
+            shtml.push('  <td>' + renderSubPage(step[2]) + '</td>');
+
+            if (/passed/i.test(step[1])) {
+                shtml.push('  <td class="text-primary">' + step[1] + '</td>');
+            }
+            else {
+                shtml.push('  <td class="text-warning">' + step[1] + '</td>');
+            }
+            shtml.push('</tr>');
+        });
+
+        shtml.push('</table>');
+
+        return shtml.join('\n');
+    }
+
+    function renderSubPage(items) {
+        var shtml = [];
+        _.each(items, function (item) {
+            for (k in item) {
+                shtml.push(k + ': ' + item[k].replace(/</g, '&lt;'));
+            }
+        });
+        return shtml.join('\n');
+    }
+
+    function renderPage(items) {
+
+        _.each(items, function (item, index) {
+            var html = ['<tr>',
+                //'  <th>' + index + '</th>',
+                '  <td>' + item[0] + '</td>',
+                '  <td>' + item[1] + '</td>',
+                '  <td>' + renderParams(item[3]) + '</td>',
+                '  <td>' + renderSteps(item[4]) + '</td>'
+            ];
+            if (/passed/i.test(item[2])) {
+                success_tests++;
+                html.push('  <td class="text-success">' + item[2] + '</td>');
+
+            }
+            else {
+                failure_tests++;
+                html.push('  <td class="text-danger">' + item[2] + '</td>');
+
+            }
+            html.push('</tr>');
+
+            $('tbody.tbody').append(html.join('\n'));
+        });
+
+        $('#total').append('Total ' + total_tests + ' tests, ').fadeIn(200);
+        $('#success').append(success_tests + ' success, ').fadeIn(500);
+        $('#failure').append(failure_tests + ' fail.').fadeIn(500);
+    }
+
+    /**
+     * Get the value of a querystring
+     * @param  {String} field The field to get the value of
+     * @param  {String} url   The URL to get the value from (optional)
+     * @return {String}       The field value
+     */
+    var getQueryString = function (field, url) {
+        var href = url ? url : window.location.href;
+        var reg = new RegExp('[?&]' + field + '=([^&#]*)', 'i');
+        var string = reg.exec(href);
+        return string ? string[1] : null;
+    };
+
+    //var testresultid = getQueryString("resultid");
+    var json_url = 'reports.prueba.portal.json';
+
+    var actions = [];
+    $.getJSON(json_url, function (data) {
+        var ary = [];
+
+        $('#title').text(data[0].name.replace(/\_/g, ' '));
+
+        actions = _.map(data[0]['children'], function (c) {
+
+            //var ary = [c.order, c.name, c.children.length, c.status, c.actionStatus, c.result];
+            var ary = [c.order, c.name, c.result];
+            //console.log(JSON.stringify(ary));
+
+            var params = loopParameters(c.parameters);
+            ary.push(params);
+
+            var children = loopChildren(c.children);
+            ary.push(children);
+
+            return ary;
+        });
+
+        total_tests = actions.length;
+
+        renderPage(actions);
+    });
+</script>
+</body>
+</html>
